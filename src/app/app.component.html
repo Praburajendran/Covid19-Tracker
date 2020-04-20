@@ -1,0 +1,36 @@
+<h1> World Wide Covid 19 Tracker </h1>
+
+<div id='container'>
+    <div class="row">
+        <div id='covidtablecontainer' class='.col-xs-9 .col-md-6'>
+
+            <table id="covidtable">
+                <tr>
+                    <th>Country</th>
+                    <th>Total Cases</th>
+                    <th>Total Death</th>
+                </tr>
+                <tr *ngFor="let data of httpdata | slice: (page-1) * pageSize : (page-1) * pageSize + pageSize" (click)='showCountry(data)'>
+                    <td>{{data.country}}</td>
+                    <td>{{data.totalCases}}</td>
+                    <td>{{data.totalDeaths}}</td>
+                </tr>
+            </table>
+            <ngb-pagination [collectionSize]="httpdata.length" [(page)]="page" [maxSize]="5" [rotate]="true" [ellipses]="false" [boundaryLinks]="true"></ngb-pagination>
+
+            <!-- <ul *ngFor = "let data of httpdata"> -->
+            <!-- <li>Country : {{data.country}}, Count: {{data.totalCases}}</li> -->
+            <!-- </ul> -->
+        </div>
+        <div id="covidmap" class='.col-xs-9 .col-md-6'>
+
+            <div #foldable class='tt-overlay-panel -left-top -medium js-foldable'>
+                <form>
+                    <label #searchBoxPlaceholder class='tt-form-label'>
+                        Search
+                    </label>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
