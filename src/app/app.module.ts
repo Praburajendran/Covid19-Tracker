@@ -11,7 +11,6 @@ import { CovidTableComponent } from './Components/covid-table/covid-table.compon
 
 import { NgbPaginationModule } from '@ng-bootstrap/ng-bootstrap';
 import { CovidDetailsComponent } from './Components/covid-details/covid-details.component';
-import { CovidMapComponent } from './Components/covid-map/covid-map.component';
 
 
 
@@ -19,8 +18,7 @@ import { CovidMapComponent } from './Components/covid-map/covid-map.component';
   declarations: [
     AppComponent,
     CovidTableComponent,
-    CovidDetailsComponent,
-    CovidMapComponent
+    CovidDetailsComponent
   ],
   imports: [
     BrowserModule,

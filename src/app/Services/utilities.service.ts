@@ -1,9 +1,24 @@
 import { Injectable } from '@angular/core';
+import srvc from '@tomtom-international/web-sdk-services';
+import tt from '@tomtom-international/web-sdk-maps';
+
+import { Antimeridianhandler } from '../Classes/antimeridianhandler';
 
 @Injectable({
   providedIn: 'root'
 })
 export class UtilitiesService {
+
+  srvcobj = srvc;
+  searchResult = {};
+  POLYGON_ID = 'searchResultPolygon';
+  OUTLINE_ID = 'searchResultOutline';
+  NO_POLYGON_MESSAGE = 'For the given result there is no polygon attached.';
+  tt = null;
+  mapval = null;
+  popup = null;
+  errorHint = null;
+  selectedCountryData = {};
 
   constructor() { }
   
@@ -17,5 +32,196 @@ export class UtilitiesService {
 	
 	public roundLatLng(num) {
 		return Math.round(num * 1000000) / 1000000;
+	}
+
+	showLoadingPopup() {
+        this.popup.setHTML('<strong>Loading...</strong>');
+        if (!this.popup.isOpen()) {
+            this.popup.setLngLat(this.mapval.getCenter());
+            this.popup.addTo(this.mapval);
+        }
+    }
+
+     showStartSearchingPopup(mapval, popup, errorHint) {
+		this.mapval = mapval;
+		this.popup = popup;
+		this.errorHint = errorHint;
+
+        this.popup.setLngLat(this.mapval.getCenter())
+            .setHTML('<strong>Start searching.</strong>');
+        if (!this.popup.isOpen()) {
+            this.popup.addTo(this.mapval);
+        }
+	}
+	
+	  
+    clearLayer(layerID) {
+        if (this.mapval.getLayer(layerID)) {
+            this.mapval.removeLayer(layerID);
+            this.mapval.removeSource(layerID);
+        }
+    }
+
+    loadPolygon() {
+        if (!this.searchResult) {
+            return;
+        }
+
+        return new Promise((resolve) => {
+            this.clearLayer(this.POLYGON_ID);
+            this.clearLayer(this.OUTLINE_ID);
+            this.showLoadingPopup();
+            resolve();
+        }).then(() => {
+            var polygonId = this.searchResult && this.searchResult['dataSources'] 
+			&& this.searchResult['dataSources']['geometry']['id'];
+            if (!polygonId) {
+                throw Error(this.NO_POLYGON_MESSAGE);
+            }
+
+            return this.srvcobj.services.additionalData({
+                key: 'FPM16D61wnehiNcf7YdljWR2RtMRZxjG',
+                geometries: [polygonId],
+                geometriesZoom: 4
+            }).go();
+        }).then((additionalDataResponse) => {
+            var additionalDataResult = additionalDataResponse && additionalDataResponse.additionalData &&
+                additionalDataResponse.additionalData[0];
+            this.renderPolygon(additionalDataResult);
+            this.showPopup();
+        }).catch((error) => {
+            this.clearPopup();
+            if (error.message) {
+                this.errorHint.setMessage(error.message);
+            }
+        });
+	}
+
+	showPopup() {
+        var resultName = this.searchResult['address'] && this.searchResult['address']['freeformAddress'];
+
+        var resultObj = {
+            lng: this.roundLatLng(this.searchResult['position']['lng']),
+            lat: this.roundLatLng(this.searchResult['position']['lat']),
+            totalCases : this.selectedCountryData['totalCases'],
+            newCases: this.selectedCountryData['newCases'],
+            totalDeaths: this.selectedCountryData['totalDeaths'],
+            newDeaths: this.selectedCountryData['newDeaths'],
+            activeCases: this.selectedCountryData['activeCases'],
+            totalRecovered: this.selectedCountryData['totalRecovered'],
+            criticalCases: this.selectedCountryData['criticalCases']
+        };
+
+      var popupResultName = '<strong>' + resultName + '</strong>';		
+      var totalCases = '<div> TotalCases : ' + resultObj.totalCases + '</div>';
+      var totalDeaths = '<div> TotalDeaths : ' + resultObj.totalDeaths + '</div>';
+      var newCases = '<div> NewCases : ' + resultObj.newCases + '</div>';
+      var newDeaths = '<div> NewDeaths : ' + resultObj.newDeaths + '</div>';
+      var activeCases = '<div> ActiveCases : ' + resultObj.activeCases + '</div>';
+      var totalRecovered = '<div> TotalRecovered : ' + resultObj.totalRecovered + '</div>';
+      var criticalCases = '<div> CriticalCases : ' + resultObj.criticalCases + '</div>';
+		
+      this.popup.setHTML('<div>' + popupResultName + totalCases + totalDeaths +
+					newCases + newDeaths + activeCases + totalRecovered + criticalCases + '</div>');
+      this.popup.setLngLat([resultObj.lng, resultObj.lat]);
+      this.popup.addTo(this.mapval);
+    }
+	
+	
+	clearPopup() {
+        this.popup.remove();
+    }
+
+     renderPolygon(additionalDataResult) {
+        var geoJson = additionalDataResult && additionalDataResult.geometryData;
+        if (!geoJson) {
+            throw Error(this.NO_POLYGON_MESSAGE);
+        }
+
+        this.mapval.addLayer({
+            id: this.POLYGON_ID,
+            type: 'fill',
+            source: {
+                type: 'geojson',
+                data: geoJson
+            },
+            paint: {
+                'fill-color': 'brown',
+                'fill-opacity': 0.1
+            }
+        });
+
+        this.mapval.addLayer({
+            id: this.OUTLINE_ID,
+            type: 'line',
+            source: {
+                type: 'geojson',
+                data: geoJson
+            },
+            paint: {
+                'line-color': '#004B7F',
+                'line-width': 2
+            }
+        });
+
+        var boundingBox = this.searchResult['boundingBox'] || this.searchResult['viewport'];
+        boundingBox = new tt.LngLatBounds([
+            [boundingBox.topLeftPoint.lng, boundingBox.btmRightPoint.lat],
+            [boundingBox.btmRightPoint.lng, boundingBox.topLeftPoint.lat]
+        ]);
+         boundingBox = new Antimeridianhandler()
+            .normalizeBoundingBox(boundingBox, tt);
+        this.mapval.fitBounds(boundingBox, { padding: 100, linear: true });
+    }
+
+	/*
+     * Prepare parameters for the search call
+     */
+    prepareServiceCall = (country, searchName) => {
+        let selectedLangCode = 'en-US';
+        let minFuzzyValue = '1';
+        let maxFuzzyValue = '2';
+        let limitValue = '10';
+        let viewValue = 'IN';
+        let servicecall, callparameters = {};
+
+        servicecall = this.srvcobj.services[searchName];
+		    callparameters['key'] =  'FPM16D61wnehiNcf7YdljWR2RtMRZxjG',
+	    	callparameters['query'] = country;
+        callparameters['minFuzzyLevel'] = minFuzzyValue;
+        callparameters['maxFuzzyLevel'] = maxFuzzyValue;
+        callparameters['language'] = selectedLangCode;
+	    	callparameters['view'] = viewValue;
+		    callparameters['limit'] = limitValue;
+
+        return servicecall(callparameters);
+    }
+	
+	doSearchCall(placeVal) {
+		let selectedSearch = 'fuzzySearch';
+		let callFlag = false;
+		let searchCall = this.prepareServiceCall(placeVal.country, selectedSearch);
+		if (!searchCall) {
+			return false;
+		}
+		searchCall.go().then(this.handleResponse.bind(this))
+				.catch(this.handleError.bind(this));
+	  };
+	  
+	handleResponse(response) {
+		console.log('response data ------->', response);
+		let respdata = response.results.filter(data => { if(data.entityType === 'Country') return true} );
+		this.searchResult = respdata[0];
+		console.log(this.searchResult);
+		return this.loadPolygon();
+	}
+
+	setCountryData(selectedCountry, searchResult) {
+		this.selectedCountryData = selectedCountry;
+		if(searchResult !== '') this.searchResult = searchResult;
+	}
+	
+	handleError(error){
+		console.log('response error data ------->', error);
 	}
 }
