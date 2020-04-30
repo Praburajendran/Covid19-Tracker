@@ -4,28 +4,32 @@ import { HttpClientModule } from '@angular/common/http';
 
 
 import { AppComponent } from './app.component';
-import { GetCovidDataService } from './get-covid-data.service';
-import { UtilitiesService } from './utilities.service';
+import { GetCovidDataService } from './Services/get-covid-data.service';
+import { UtilitiesService } from './Services/utilities.service';
 
-import { CovidTableComponent } from './covid-table/covid-table.component';
+import { CovidTableComponent } from './Components/covid-table/covid-table.component';
 
 import { NgbPaginationModule } from '@ng-bootstrap/ng-bootstrap';
+import { CovidDetailsComponent } from './Components/covid-details/covid-details.component';
+import { CovidMapComponent } from './Components/covid-map/covid-map.component';
 
 
 
 @NgModule({
   declarations: [
     AppComponent,
-    CovidTableComponent
+    CovidTableComponent,
+    CovidDetailsComponent,
+    CovidMapComponent
   ],
   imports: [
     BrowserModule,
-	HttpClientModule,
-	NgbPaginationModule
+	  HttpClientModule,
+	  NgbPaginationModule
   ],
   providers: [
-	GetCovidDataService,
-	UtilitiesService
+	  GetCovidDataService,
+	  UtilitiesService
   ],
   bootstrap: [AppComponent]
 })

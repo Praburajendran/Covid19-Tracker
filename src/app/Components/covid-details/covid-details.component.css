@@ -1,0 +1,51 @@
+@import "@tomtom-international/web-sdk-maps";
+@import "@tomtom-international/web-sdk-plugin-searchbox/dist/SearchBox";   
+	 
+
+	 
+#covidmap {
+    height: 85vh;
+    width: 50%;
+}
+
+h1 { text-align: center }
+
+li { font-size: 20px; }
+
+#apptable {
+  font-family: Verdana, Geneva, sans-serif;
+  border-collapse: collapse;
+  width: 50%;
+  font-size:16px;
+  text-align: center;
+}
+
+#foldable {
+	width: 320px;
+}
+
+#foldable .tt-search-box {
+	width: 100% !important;
+	z-index: 2;
+}
+
+@media only screen and (max-device-width: 480px) {
+
+	#apptable {
+		width: 100%;
+	}
+		 
+	#covidmap {
+		height: 100vh;
+		width: 100%;
+	}
+	
+	.pagination {
+		margin-left: 10%;
+	}
+	
+	h1 {
+		font-size: 2rem;
+	}
+
+}

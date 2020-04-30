@@ -1,0 +1,15 @@
+<div id='container'>
+    <div class="row">
+        <app-covid-table id='apptable' [dataObj]=httpdata (selectedVal)="getSelectedCountry($event)"></app-covid-table>
+        <div id="covidmap" class='.col-xs-9 .col-md-6'>
+
+            <div #foldable class='tt-overlay-panel -left-top -medium js-foldable'>
+                <form>
+                    <label #searchBoxPlaceholder class='tt-form-label'>
+                        Search
+                    </label>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
